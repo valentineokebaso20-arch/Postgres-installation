@@ -1,0 +1,541 @@
+## Confirm OS version
+hostnamectl
+
+## Confirm memory and CPUs
+free -h
+
+lscpu | grep -E '^Thread|^Core|^Socket|^CPU\('
+
+## Confirm firewall and SELinux status
+ systemctl status firewalld
+
+ systemctl stop firewalld
+
+ systemctl disable firewalld
+
+ systemctl status firewalld
+
+ getenforce
+
+ setenforce 0
+
+ getenforce
+
+Disable SELinux permanently
+vi /etc/selinux/config
+Edit the /etc/selinux/config file and change SELINUX=enforcing to SELINUX=disabled
+Restart the server
+
+## Add proxy to be able to download from the internet
+## Download binary packages
+-- Create and switch to directory where to keep the binaries
+mkdir -p /data/binaries/postgres && cd /data/binaries/postgres
+
+wget --no-check-certificate https://download.postgresql.org/pub/repos/yum/16/redhat/rhel-9.5-x86_tgresql16-16.9-2PGDG.rhel9.x86_64.rpm        
+wget --no-check-certificate https://download.postgresql.org/pub/repos/yum/16/redhat/rhel-9.5-x86_64/postgresql16-server-16.9-2PGDG.rhel9.x86_64.rpm     
+wget --no-check-certificate https://download.postgresql.org/pub/repos/yum/16/redhat/rhel-9.5-x86_64/postgresql16-libs-16.9-2PGDG.rhel9.x86_64.rpm
+wget --no-check-certificate https://download.postgresql.org/pub/repos/yum/16/redhat/rhel-9.5-x86_64/postgresql16-contrib-16.9-2PGDG.rhel9.x86_64.rpm        
+wget --no-check-certificate https://download.postgresql.org/pub/repos/yum/16/redhat/rhel-9.5-x86_64/pg_repack_16-1.5.2-1PGDG.rhel9.x86_64.rpm                   
+wget --no-check-certificate https://download.postgresql.org/pub/repos/yum/16/redhat/rhel-9.5-x86_64/system_stats_16-3.2-1PGDG.rhel9.x86_64.rpm          
+wget --no-check-certificate https://download.postgresql.org/pub/repos/yum/16/redhat/rhel-9.5-x86_64/pgaudit_16-16.1-1PGDG.rhel9.x86_64.rpm                      
+wget --no-check-certificate https://download.postgresql.org/pub/repos/yum/16/redhat/rhel-9.5-x86_64/pgauditlogtofile_16-1.6.4-1PGDG.rhel9.x86_64.rpm
+wget --no-check-certificate https://download.postgresql.org/pub/repos/yum/16/redhat/rhel-9.5-x86_64/safeupdate_16-1.5-1PGDG.rhel9.x86_64.rpm            
+wget --no-check-certificate https://download.postgresql.org/pub/repos/yum/16/redhat/rhel-9.5-x86_64/set_user_16-4.1.0-1PGDG.rhel9.x86_64.rpm                
+wget --no-check-certificate https://download.postgresql.org/pub/repos/yum/16/redhat/rhel-9.5-x86_64/sslutils_16-1.4-1PGDG.rhel9.x86_64.rpm                      
+wget --no-check-certificate https://download.postgresql.org/pub/repos/yum/16/redhat/rhel-9.5-x86_64/repmgr_16-5.5.0-1PGDG.rhel9.x86_64.rpm                  
+wget --no-check-certificate https://download.postgresql.org/pub/repos/yum/16/redhat/rhel-9.5-x86_64/pglogical_16-2.4.4-1PGDG.rhel9.x86_64.rpm               
+wget --no-check-certificate https://download.postgresql.org/pub/repos/yum/16/redhat/rhel-9.5-x86_64/pg_stat_kcache_16-2.3.0-1PGDG.rhel9.x86_64.rpm          
+wget --no-check-certificate https://download.postgresql.org/pub/repos/yum/16/redhat/rhel-9.5-x86_64/pg_wait_sampling_16-1.1.8-1PGDG.rhel9.x86_64.rpm            
+wget --no-check-certificate https://download.postgresql.org/pub/repos/yum/16/redhat/rhel-9.5-x86_64/pg_profile_16-4.8-1PGDG.rhel9.noarch.rpm                   
+wget --no-check-certificate https://download.postgresql.org/pub/repos/yum/16/redhat/rhel-9.5-x86_64/pg_partman_16-5.2.4-1PGDG.rhel9.x86_64.rpm          
+wget --no-check-certificate https://download.postgresql.org/pub/repos/yum/16/redhat/rhel-9.5-x86_64/pg_cron_16-1.6.5-1PGDG.rhel9.x86_64.rpm             
+wget --no-check-certificate https://download.postgresql.org/pub/repos/yum/16/redhat/rhel-9.5-x86_64/pg_permissions_16-1.3-2PGDG.rhel9.noarch.rpm            
+wget --no-check-certificate https://download.postgresql.org/pub/repos/yum/16/redhat/rhel-9.5-x86_64/pgagent_16-4.2.3-1PGDG.rhel9.x86_64.rpm             
+wget --no-check-certificate https://download.postgresql.org/pub/repos/yum/16/redhat/rhel-9.5-x86_64/pg_task_16-2.1.7-1PGDG.rhel9.x86_64.rpm                 
+wget --no-check-certificate https://download.postgresql.org/pub/repos/yum/16/redhat/rhel-9.5-x86_64/pgstats_16-1.4.0-1PGDG.rhel9.x86_64.rpm             
+wget --no-check-certificate https://download.postgresql.org/pub/repos/yum/16/redhat/rhel-9.5-x86_64/pg_hint_plan_16-1.6.1-1PGDG.rhel9.x86_64.rpm            
+wget --no-check-certificate https://download.postgresql.org/pub/repos/yum/16/redhat/rhel-9.5-x86_64/sequential_uuids_16-1.0.2-4PGDG.rhel9.x86_64.rpm            
+wget --no-check-certificate https://download.postgresql.org/pub/repos/yum/16/redhat/rhel-9.5-x86_64/timestamp9_16-1.4.0-2PGDG.rhel9.x86_64.rpm              
+wget --no-check-certificate https://download.postgresql.org/pub/repos/yum/16/redhat/rhel-9.5-x86_64/pg_uuidv7_16-1.6.0-1PGDG.rhel9.x86_64.rpm               
+wget --no-check-certificate https://download.postgresql.org/pub/repos/yum/16/redhat/rhel-9.5-x86_64/pg_stat_monitor_16-2.1.1-1PGDG.rhel9.x86_64.rpm             
+wget --no-check-certificate https://download.postgresql.org/pub/repos/yum/16/redhat/rhel-9.5-x86_64/postgresql16-docs-16.9-2PGDG.rhel9.x86_64.rpm       
+
+## uninstall old/unwanted packages
+-- list packages to be removed
+dnf remove $(rpm -qa | grep post) --assumeno
+
+-- remove the packages
+dnf remove $(rpm -qa | grep post)
+## Install the new packages
+-- Use dnf to install all packages together
+sudo dnf install -y ./*.rpm
+
+rpm -ivh *.rpm
+
+✅ Why use dnf install instead of rpm -ivh?
+dnf handles dependencies, conflicts, and SELinux contexts better.
+
+## Verify installed packages
+rpm -qa | grep postgresql16
+
+ df -h
+## Creating directories with multiple mount points
+mkdir -p /data/pgdata/data /archive/pgarchive/pg_wal /logs/pglogs/logs
+
+chown -R postgres:postgres /data/pgdata /archive/pgarchive /logs/pglogs
+
+chmod 750 -R /data/pgdata /archive/pgarchive /logs/pglogs
+
+## Verirfy changes above on the directories
+ls -lRt /data/
+ls -lRt /archive/
+ls -lRt /logs/
+
+## Initialize and start the DB
+-- Change to user postgres. This user owns the postgres database process
+su - postgres
+
+-- You can find help on how to use each command like below
+/usr/pgsql-16/bin/initdb --help
+
+/usr/pgsql-16/bin/initdb -D /data/pgdata/data/
+or
+/usr/pgsql-16/bin/initdb -D /data/pgdata/data/ -X /archive/pgarchive/pg_wal/ -A scram-sha-256 -U vokebaso -W
+or
+/usr/pgsql-16/bin/initdb -D /data/pgdata/data/ -X /archive/pgarchive/pg_wal/ -A scram-sha-256 -W
+
+-- to initialize server again, we need to clean up the directories first, as below
+rm -rf /data/pgdata/data/* /archive/pgarchive/pg_wal/*
+
+/usr/pgsql-16/bin/pg_ctl -D /data/pgdata/data/ -l logfile start
+
+# If Db is initialized without specifying password for superuser account and authentication method, do so below and update pg_hba.conf
+
+-- Update superuser password 
+ALTER USER postgres WITH PASSWORD 'password' VALID UNTIL 'infinity';
+
+-- Update pg_hba.conf 
+
+vi pg_hba.conf
+# TYPE      DATABASE        USER            ADDRESS             METHOD
+local       all             postgres                            scram-sha-256
+host        all             postgres        x.x.x.x/32        scram-sha-256 ## local connections for user postgres
+host        all             postgres        0.0.0.0/0           scram-sha-256 ## log in from other hosts
+host        all             all             0.0.0.0/0           scram-sha-256
+
+===========================================
+
+## From this point onwards, changes can be done to-be primary Db alone. 
+## The DR will pull the changes from the primary when replication is configured.
+
+## Do all config file changes on primary ##
+
+vi /data/pgdata/data/postgresql.conf
+
+#------------------------------------------------------------------------------
+# FILE LOCATIONS
+#------------------------------------------------------------------------------
+
+data_directory = '/data/pgdata/data'
+hba_file = '/data/pgdata/data/pg_hba.conf'
+ident_file = '/data/pgdata/data/pg_ident.conf'
+
+#------------------------------------------------------------------------------
+# CONNECTIONS AND AUTHENTICATION
+#------------------------------------------------------------------------------
+
+# - Connection Settings -
+
+listen_addresses = '*'          # what IP address(es) to listen on;
+port = xxxx             # (change requires restart)
+max_connections = 10000                 # (change requires restart)
+reserved_connections = 50               # (change requires restart)
+superuser_reserved_connections = 10     # (change requires restart)
+log_connections = on
+log_disconnections = on
+
+unix_socket_permissions = 0770
+
+# - Authentication -
+
+password_encryption = scram-sha-256     # scram-sha-256 or md5
+
+#------------------------------------------------------------------------------
+# RESOURCE USAGE (except WAL)
+#------------------------------------------------------------------------------
+
+# - Memory -
+
+shared_buffers = 5GB                    # min 128kB # 25-40% of total RAM
+                                        # Determines: How much memory PostgreSQL uses for caching data pages.
+
+temp_buffers = 80MB                     # Determines: Memory allocated per session for
+                                        # temporary tables
+                                        # Factors Affecting Value:
+                                        # - Heavy use of temporary tables.
+                                        # - High-concurrency applications.
+
+work_mem = 50MB                         # min 64kB 
+                                        # Determines: Memory allocated per sort, hash join, and aggregation
+
+maintenance_work_mem = 200MB            # Determines: Memory used by maintenance 
+                                        # tasks like VACUUM, CREATE INDEX, ALTER TABLE … SET STATISTICS.
+                                        # Typical Value: 512MB - 2GB (for large databases).
+
+# - Disk -
+
+temp_file_limit = 100MB                 # limits per-process temp file space
+                                        # in kilobytes, or -1 for no limit
+
+## Additoinal values to consider
+effective_cache_size                    # Determines: How much memory PostgreSQL assumes is
+                                        # available for caching disk data (OS + PostgreSQL buffers)
+                                        # Does not allocate memory directly—used by the query planner to optimize plans
+                                        # Typical Value: 50-75% of total RAM.
+autovacuum_work_mem                     # (Memory for Autovacuum Worker)
+                                        # Determines: Memory for autovacuum processes.
+                                        # Default: Uses maintenance_work_mem, but can be configured separately.
+                                        # Typical Value: 256MB - 1GB (if autovacuum handles large tables).
+huge_pages                              # (Use Large Memory Pages)
+                                        # Determines: Whether PostgreSQL uses large memory pages for efficiency.
+                                        # Recommended: on for large databases.
+                                        # Factors Affecting Value:
+                                        # - OS support for HugePages (Linux needs sysctl settings).
+                                        # - Large shared_buffers settings (HugePages reduce overhead).
+## How to tune these parameters
+# Analyze Workload:
+#   OLTP: Prioritize work_mem, shared_buffers, and autovacuum_work_mem.
+#   OLAP: Increase work_mem and effective_cache_size.
+
+#------------------------------------------------------------------------------
+# WRITE-AHEAD LOG
+#------------------------------------------------------------------------------
+
+# - Settings -
+
+wal_level = replica                     # minimal, replica, or logical
+                                        # (change requires restart)
+wal_compression = on                                        
+
+# - Checkpoints -
+#checkpoint_timeout = 5min               # range 30s-1d
+#checkpoint_completion_target = 0.9
+
+max_wal_size = 5GB                      #
+min_wal_size = 1GB                      # These two control how much WAL PostgreSQL is
+                                        # willing to use for checkpointing purposes, not
+                                        # directly for replication
+                                        # 
+                                        # max_wal_size - allows WAL to grow up to 8GB before forcing a checkpoint. 
+                                        # This reduces checkpoint frequency (improving performance) while keeping WAL within safe disk limits
+                                        #
+                                        # min_wal_size - Ensures that after a checkpoint, at least 1GB of WAL is retained. 
+                                        # This prevents excessive WAL removal and improves checkpoint efficiency
+
+# - Archiving -
+
+archive_mode = on               # enables archiving; off, on, or always
+                                # (change requires restart)
+archive_command = 'cp -i %p /archive/pgarchive/pg_wal/%f'           
+ # command to use to archive a WAL file
+                                # placeholders: %p = path of file to archive
+                                #               %f = file name only
+                                # e.g. 'test ! -f /mnt/server/archivedir/%f && cp %p /mnt/server/archivedir/%f'
+# REPLICATION
+#------------------------------------------------------------------------------
+# - Sending Servers -
+
+# Set these on the primary and on any standby that will send replication data.
+
+max_wal_senders = 10            # max number of walsender processes
+                                # (change requires restart)
+max_replication_slots = 10      # max number of replication slots
+                                # (change requires restart)
+wal_keep_size = 2GB             # in megabytes; 0 disables
+                                # Defines the minimum amount of WAL data (in size) to keep
+                                # in pg_wal/ (the WAL directory) to support replication — 
+                                # especially helpful for replicas that might fall slightly
+                                # behind.
+                                # Key traits:
+                                # - Used only to help streaming replication.
+                                # - Protects recent WAL files from being removed too quickly.
+                                # - Does not limit WAL growth, just delays cleanup.
+
+# - Standby Servers -
+
+# These settings are ignored on a primary server.
+
+primary_conninfo = 'user=replication_user channel_binding=prefer host=x.x.x.x port=xxxx sslmode=prefer sslcompression=0 sslsni=1 ssl_min_protocol_version=TLSv1.2 gssencmode=prefer krbsrvname=postgres target_session_attrs=any'                      
+# connection string to sending serveru
+# primary_conninfo = 'user=replic_user host=IP port=Number sslmode=prefer krbsrvname=postgres target_session_attrs=any'
+primary_slot_name = 'name'                     # replication slot on sending server
+hot_standby = on                        # "off" disallows queries during recovery
+
+# - Subscribers -
+
+# These settings are ignored on a publisher.
+
+# max_logical_replication_workers = 4    # taken from max_worker_processes
+                                         # (change requires restart)
+# max_sync_workers_per_subscription = 2  # taken from max_logical_replication_workers
+# max_parallel_apply_workers_per_subscription = 2        # taken from max_logical_replication_workers
+
+#------------------------------------------------------------------------------
+# QUERY TUNING
+#------------------------------------------------------------------------------
+
+# - Planner Cost Constants -
+effective_cache_size = 24GB         ## This value should typically be set to 50-75% of
+                                    # total system memory
+
+# effective_cache_size                  # Determines: How much memory PostgreSQL assumes is
+                                        # available for caching disk data (OS + PostgreSQL buffers)
+                                        # Does not allocate memory directly—used by the query planner to optimize plans
+                                        # Typical Value: 50-75% of total RAM.
+
+#------------------------------------------------------------------------------
+# REPORTING AND LOGGING
+#------------------------------------------------------------------------------
+
+# These are only used if logging_collector is on:
+log_directory = '/data/pgdata/logs'     # directory where log files are written,
+                                        # can be absolute or relative to PGDATA
+log_filename = 'username-%a.log'        # log file name pattern,
+                                        # can include strftime() escapes
+log_file_mode = 0600                    # creation mode for log files,
+                                        # begin with 0 to use octal notation
+log_rotation_age = 1d                   # Automatic rotation of logfiles will
+log_rotation_size = 100MB               # Automatic rotation of logfiles will
+                                        # happen after that much log output.
+log_truncate_on_rotation = on           # If on, an existing log file with the
+                                        # same name as the new log file will be
+                                        # truncated rather than appended to.
+                                        # But such truncation only occurs on
+                                        # time-driven rotation, not on restarts             
+                                        # or size-driven rotation.  Default is
+                                        # off, meaning append to existing files
+                                        # in all cases.                                        
+# - When to Log - (Leave as default)
+
+#log_min_messages = warning             # values in order of decreasing detail:
+                                        #   debug5
+                                        #   debug4
+                                        #   debug3
+                                        #   debug2
+                                        #   debug1
+                                        #   info
+                                        #   notice
+                                        #   warning
+                                        #   error
+                                        #   log
+                                        #   fatal
+                                        #   panic
+
+#log_min_error_statement = error        # values in order of decreasing detail:
+                                        #   debug5
+                                        #   debug4
+                                        #   debug3
+                                        #   debug2
+                                        #   debug1
+                                        #   debug2
+                                        #   debug1
+                                        #   info
+                                        #   notice
+                                        #   warning
+                                        #   error
+                                        #   log
+                                        #   fatal
+                                        #   panic (effectively off)
+
+log_min_duration_statement = 5s         # -1 is disabled, 0 logs all statements
+                                        # and their durations, > 0 logs only
+                                        # statements running at least this number
+                                        # of milliseconds
+
+#log_min_duration_sample = -1           # -1 is disabled, 0 logs a sample of statements
+                                        # and their durations, > 0 logs only a sample of
+                                        # statements running at least this number
+                                        # of milliseconds;
+                                        # sample fraction is determined by log_statement_sample_rate
+
+#log_statement_sample_rate = 1.0        # fraction of logged statements exceeding
+                                        # log_min_duration_sample to be logged;
+                                        # 1.0 logs all such statements, 0.0 never logs
+
+#log_transaction_sample_rate = 0.0      # fraction of transactions whose statements
+                                        # are logged regardless of their duration; 1.0 logs all
+                                        # statements from all transactions, 0.0 never logs
+
+#log_startup_progress_interval = 10s    # Time between progress updates for
+                                        # long-running startup operations.
+                                        # 0 disables the feature, > 0 indicates
+                                        # the interval in milliseconds.
+#log_error_verbosity = default          # terse, default, or verbose messages
+
+log_line_prefix = '%m [%p] app=%a user=%u db=%d client=%r command=%i: '            # special values: %r %p %i %e %s
+                                        #   %a = application name
+                                        #   %u = user name
+                                        #   %d = database name
+                                        #   %h = remote host
+                                        #   %m = timestamp with milliseconds
+                                        #   %r = remote host and port
+                                        #   %p = process ID
+                                        #   %i = command tag
+log_statement = 'ddl'                   # none, ddl, mod, all
+
+log_temp_files = 1024kB   
+# logs temp files > 1MB
+
+#------------------------------------------------------------------------------
+# CLIENT CONNECTION DEFAULTS
+#------------------------------------------------------------------------------
+
+# - Statement Behavior -
+
+statement_timeout = '1min'
+lock_timeout = '5s'
+
+# - Shared Library Preloading -
+
+shared_preload_libraries = 'pg_stat_monitor,pg_stat_statements,pg_cron,pgaudit,pg_stat_kcache' # (change requires restart)
+
+#------------------------------------------------------------------------------
+# LOCK MANAGEMENT
+#------------------------------------------------------------------------------
+
+deadlock_timeout = '300ms'
+max_locks_per_transaction = 256
+
+#------------------------------------------------------------------------------
+# CUSTOMIZED OPTIONS
+#------------------------------------------------------------------------------
+
+# Add settings for extensions here
+
+## pgaudit settings
+pgaudit.log = 'ddl,role'
+pgaudit.log_level = 'log'
+pgaudit.log_parameter = on
+pgaudit.log_relation = on
+pgaudit.log_statement_once = on
+
+## pgauditlogtofile configuration
+pgauditlogtofile.compress_rotated_files = 'on'
+pgauditlogtofile.max_log_files = '10'
+pgauditlogtofile.log_directory = '/logs/pgaudit/auditlogs'
+pgauditlogtofile.log_filename = 'pgaudit-%d.log'
+pgauditlogtofile.log_rotation_age = 1d
+pgauditlogtofile.log_rotation_size = 200MB
+pgauditlogtofile.log_file_mode = '0600'
+pgauditlogtofile.log_line_prefix = '%m [%p] app=%a user=%u db=%d client=%r command=%i SQL State=%e: '
+
+## pg_stat_statements configurations
+pg_stat_statements.max = 10000
+pg_stat_statements.track = all
+pg_stat_statements.track_utility = on
+pg_stat_statements.save = on
+pg_stat_statements.track_planning = on
+pg_stat_statements.queryid = auto
+# pg_stat_statements.pg_stat_kcache = on  # Uncomment if using pg_stat_kcache
+
+## pgcron setting
+# cron.database_name = 'sha_db'         ### Database name here ## Never include this for shared environments
+
+## Restart the database instance after you're done for the changes to take effect
+
+## Replication configuration
+CREATE USER appslave WITH REPLICATION LOGIN NOBYPASSRLS NOINHERIT NOCREATEDB NOCREATEROLE PASSWORD 'strong password' VALID UNTIL 'infinity';
+
+COMMENT ON ROLE appslave IS'Description:system user Role:replication';
+
+revoke all on schema public from appslave;
+
+== Create replication slot
+- check available slots
+SELECT slot_name, slot_type, active, wal_status FROM pg_replication_slots;
+ 
+- Create slot
+SELECT pg_create_physical_replication_slot('name');
+
+- Show slosts
+SELECT * FROM pg_replication_slots;
+
+== How to drop a replication slot (just in case)
+SELECT pg_drop_replication_slot('nifi01');
+
+== Add pgpass file (on both pri and DR)
+vi ~/.pgpass
+
+#hostname:port:database:username:password
+x.x.x.x.:port:replication:appslave:password
+IP:Port:replication:appslave:Slave#2018
+localhost:port:*:postgres:password
+
+chmod 0600 ~/.pgpass
+
+-->> Activating replication on DR
+
+--> Install and initialize DR server database
+
+-- Confirm if DB server is running. Stop it if it is.
+
+-- Clear the directories
+rm -rf /data/pgdata/data/* /archive/pgarchive/pg_wal/*
+
+-- Run pg_basebackup from the DR
+/usr/pgsql-16/bin/pg_basebackup -U appslave -p port -h IP -X stream -C -S hbond -v -R -D /data/pgdata/data/
+
+nohup /usr/pgsql-16/bin/pg_basebackup -U appslave -p port -h IP -D /data/pgdata/data -R -X stream -C -S hbond -P -v > /logs/pglogs/dr_create.log 2>&1 &
+
+-- Edit config file on DR (Change IP in primary_conninfo)
+vi /data/pgdata/data/postgresql.conf
+
+-- Bring up the DR DB server
+
+--> Confirm status of replication
+Check if replication is running well.
+
+-- Log in to DR and run
+SELECT * FROM pg_stat_wal_receiver;
+
+-- Log in to pri server and run 
+SELECT * FROM pg_stat_replication;
+
+--> Run this command on both nodes to check which 
+    is pri and DR (Returns t for DR and f for pri)
+select pg_is_in_recovery();
+
+====================================================
+
+# Add postgres service ==
+
+vi /etc/systemd/system/postgresql.service
+
+[Unit]
+Description=PostgreSQL database server
+After=network.target
+
+[Service]
+Type=forking
+User=postgres
+Group=postgres
+Environment=PGDATA=/data/pgdata/data
+ExecStart=/usr/pgsql-16/bin/pg_ctl -D "$PGDATA" start
+ExecStop=/usr/pgsql-16/bin/pg_ctl stop -D "$PGDATA" -s -m fast
+PIDFile=/data/pgdata/data/postmaster.pid
+LimitNOFILE=65535
+TimeoutSec=300
+Restart=always
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+
+## Run these after adding the service file
+sudo systemctl daemon-reexec
+sudo systemctl daemon-reload
+sudo systemctl enable postgresql
+sudo systemctl restart postgresql
+
+
