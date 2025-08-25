@@ -1,0 +1,87 @@
+CREATE USER buyaki WITH PASSWORD 'UgD6P4mQnXF_c7Ey8jEvGdT' SUPERUSER VALID UNTIL '2025-06-24';
+
+COMMENT ON ROLE buyaki IS'Description: Cyber sec user for scanning DB';
+
+CREATE DATABASE buyaki_uat;
+
+\c buyaki_uat
+
+CREATE SCHEMA gitea; 
+
+CREATE USER buyaki_usr1WITH PASSWORD 'L9_mV8bwh3ePRrfYuJGNSv1' NOREPLICATION NOSUPERUSER NOINHERIT NOCREATEROLE NOCREATEDB LOGIN VALID UNTIL 'infinity';
+
+COMMENT ON ROLE buyaki_usr1IS 'Owner:btarno Name:buyaki_usr1Ticket: CRUD';
+
+GRANT CONNECT ON DATABASE buyaki_uat TO buyaki_usr1;
+
+GRANT USAGE ON SCHEMA buyakiTO buyaki_usr1;
+
+GRANT SELECT ON ALL TABLES IN SCHEMA buyakiTO buyaki_usr1;
+
+GRANT INSERT ON ALL TABLES IN SCHEMA buyakiTO buyaki_usr1;
+
+GRANT UPDATE ON ALL TABLES IN SCHEMA buyakiTO buyaki_usr1;
+
+GRANT DELETE ON ALL TABLES IN SCHEMA buyakiTO buyaki_usr1;
+
+GRANT SELECT ON ALL SEQUENCES IN SCHEMA buyaki TO buyaki_usr1;
+
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA buyaki TO buyaki_usr1;
+
+GRANT UPDATE ON ALL SEQUENCES IN SCHEMA buyaki TO buyaki_usr1;
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA buyaki GRANT SELECT ON SEQUENCES TO buyaki_usr1;
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA buyaki GRANT UPDATE ON SEQUENCES TO buyaki_usr1;
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA buyaki GRANT SELECT ON TABLES TO buyaki_usr1;
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA buyaki GRANT INSERT ON TABLES TO buyaki_usr1;
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA buyaki GRANT UPDATE ON TABLES TO buyaki_usr1;
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA buyaki GRANT DELETE ON TABLES TO buyaki_usr1;
+
+ALTER DATABASE buyaki_uat OWNER TO buyaki_usr1;
+
+ALTER SCHEMA buyakiOWNER TO buyaki_usr1;
+
+REVOKE ALL ON SCHEMA public FROM buyaki_usr1;
+
+
+
+#8. Create the application user
+CREATE USER buyaki_uat_app_user
+  WITH PASSWORD 'AOd#w4ZHOmb&28JgRmCFY'
+  NOREPLICATION NOSUPERUSER NOINHERIT NOCREATEROLE NOCREATEDB SEARCH_PATH='buyaki' LOGIN
+  VALID UNTIL 'infinity';
+
+COMMENT ON ROLE buyaki_uat_app_user IS 'Owner:vokebaso Ticket:- DB:buyaki_uat_db Rights:CRUD Env:UAT';
+
+#2. Create the database
+CREATE DATABASE buyaki_uatdb;
+
+#3. Connect to the new database
+\c buyaki_uat_db
+
+#6. Create a dedicated schema
+-- CREATE SCHEMA buyakiAUTHORIZATION buyaki_admin;
+CREATE SCHEMA buyaki;
+
+
+
+#Show search path
+show search_path;
+
+ SELECT * FROM pg_roles where rolname = 'buyaki_uat_app_user';
+ Alter user (username) set search_path to'schemaname'
+  SELECT * FROM pg_roles where rolname = 'buyaki_uat_app_user';
+
+
+#10. Grant basic privileges to app user
+GRANT CONNECT ON DATABASE buyaki_uat_db TO buyaki_uat_app_user;
+GRANT USAGE, CREATE ON SCHEMA buyaki TO buyaki_uat_app_user;
+-- GRANT CREATE ON SCHEMA buyaki TO buyaki_uat_app_user;
+
+#9. Revoke access to the public schema (safe and proper)
+REVOKE ALL ON SCHEMA public FROM buyaki_uat_app_user;
