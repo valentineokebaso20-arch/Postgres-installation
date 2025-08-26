@@ -1,0 +1,211 @@
+#Confirm OS version
+hostnamectl
+
+#Confirm memory and CPUs
+free -h
+
+#lscpu | grep -E '^Thread|^Core|^Socket|^CPU('
+
+#Confirm firewall and SELinux status
+#systemctl status firewalld
+
+#systemctl stop firewalld
+
+#systemctl disable firewalld
+
+#systemctl status firewalld
+
+#getenforce
+
+#setenforce 0
+
+#getenforce
+
+#Disable SELinux permanently vi /etc/selinux/config Edit the /etc/selinux/config file and change SELINUX=enforcing to SELINUX=disabled
+
+#Add proxy to be able to download from the internet
+
+#the installation
+sudo yum remove -y abrt
+
+sudo yum -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm
+
+or for rhel 8
+sudo yum -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
+
+sudo curl -o /etc/yum.repos.d/scylla.repo -L http://downloads.scylladb.com/rpm/centos/scylla-5.4.repo
+
+wget --no-check-certificate -P /etc/yum.repos.d/scylla.repo http://downloads.scylladb.com/rpm/centos/scylla-5.4.repo
+
+#another way download/get scylla
+Download to your windows machine from http://downloads.scylladb.com/rpm/centos/scylla-5.4.repo
+Connect the machine with rhel env using WinSCP
+transfer it to /home/netadmin, then cp /home/netadmin/scylla-5.4.repo /etc/yum.repos.d/
+Install the db
+sudo yum --setopt=sslverify=false install scylla # To skip verification of certificate
+
+sudo yum install scylla sudo yum install scylla-<your patch version> ##sudo yum install scylla-5.4.9
+
+#check if installed
+scylla --version
+
+
+#check installed packages
+dpkg -l | grep scylla
+
+#Edit config file (Put only 1 seed first when starting the first node)
+vi /etc/scylla/scylla.yaml
+
+#important cofiguration make sure that they are not commented out:
+1.clustername
+2.seeds MAKE SURE THAT THERE'S ONLY ONE IP ADDRESS WHEN CREATING FIRST NODE OR THE NODE WILL FAIL
+3.listen_address
+4.rpc_address: 0.0.0.0
+5.endpoint_snitch
+6.developer mode - true
+7.broadcast_rpc_address: changed to my server address
+ssl_storage_port: changed from default storage_port: changed from default
+
+------------------------------------------------------------------------------
+EXAMPLE OF YAML FILE (REQUIRED: cluser_name,seeds,listen_add,rpc_add,enpoint_snitch)
+------------------------------------------------------------------------------
+The name of the cluster. This is mainly used to prevent machines in
+one logical cluster from joining another.
+cluster_name: 'Test Cluster'
+
+This defines the number of tokens randomly assigned to this node on the ring
+The more tokens, relative to other nodes, the larger the proportion of data
+that this node will store. You probably want all nodes to have the same number
+of tokens assuming they have equal hardware capability.
+num_tokens: 256
+
+Directory where Scylla should store data on disk.
+lets avoid using /var folder because its under / which can crash the system
+data_file_directories: - /data/scdata/data
+
+commit log. when running on magnetic HDD, this should be a
+separate spindle than the data directories.
+commitlog_directory: /logs/sclogs/commitlog
+
+schema commit log. A special commitlog instance
+used for schema and system tables.
+When running on magnetic HDD, this should be a
+separate spindle than the data directories.
+schema_commitlog_directory: /logs/sclogs/commitlog/schema
+
+seed_provider class_name is saved for future use.
+A seed address is mandatory.
+seed_provider: # The addresses of hosts that will serve as contact points for the joining node. # It allows the node to discover the cluster ring topology on startup (when # joining the cluster). # Once the node has joined the cluster, the seed list has no function. - class_name: org.apache.cassandra.locator.SimpleSeedProvider parameters: # In a new cluster, provide the address of the first node. # In an existing cluster, specify the address of at least one existing node. # If you specify addresses of more than one node, use a comma to separate them. # For example: "<IP1>,<IP2>,<IP3>" - seeds: "127.0.0.1"
+
+Address or interface to bind to and tell other Scylla nodes to connect to.
+You must change this if you want multiple nodes to be able to communicate!
+Setting listen_address to 0.0.0.0 is always wrong.
+listen_address: localhost
+
+Address to broadcast to other Scylla nodes
+Leaving this blank will set it to the same value as listen_address
+broadcast_address: 1.2.3.4
+port for the CQL native transport to listen for clients on
+For security reasons, you should not expose this port to the internet. Firewall it if needed.
+native_transport_port: port number
+
+Uncomment to enable experimental features
+experimental: true
+endpoint_snitch: SimpleSnitch
+
+developer_mode: true
+
+------------------------------------------------------------------------------
+END OF YAML FILE
+------------------------------------------------------------------------------
+Setup file system
+sudo scylla_setup 
+##if you dont run this the db wont work
+
+Kernel check-yes
+verify the scyllaDB packages are installed - yes
+scylla server to start automatically when the node boots- yes
+housekeeping check fo newer versions - no
+Network time protocol - yes
+Raid and xfs - no for now
+coredumps - yes
+setup system-wide coofiguration file - no
+IOTune - yes (Wait for a while to get some parameters)
+measure sequential write bandwith - (under IOTune)
+cpu scaling govonor - yes
+fstrim -yes
+will scylla be only service on host -yes
+configure swap file - yes
+create swap file on root - yes
+autoconfigure swap size - yes
+rsyslong to remote server - no
+limitnofiles - choose no
+#Start server
+sudo systemctl start scylla-server.service sudo systemctl status scylla-server.service sudo systemctl start scylla-server
+
+#Check node status UN status- “U” means up, and "N" means normal
+nodetool status
+
+#Start cqlsh
+cqlsh
+
+#Create KEYSPACE 
+Only use SimpleStrategy in development not production environment
+CREATE KEYSPACE IF NOT EXISTS my_keyspace WITH replication = { 'class': 'SimpleStrategy', 'replication_factor': 1 }
+
+#Use the new created keyspace
+
+USE my_keyspace;
+
+#Create TABLE
+CREATE TABLE IF NOT EXISTS users ( user_id uuid, users ( user_id uuid, username text, PRIMARY KEY (user_id) );
+
+
+
+
+
+
+mkdir -p /data/scdata/data /logs/sclogs/commitlog /logs/sclogs/commitlog/schema /logs/sclogs/hints /data/scdata/workdir
+hints_directory: /logs/sclogs/hints
+
+chmod 755 -R /logs/
+chmod 755 -R /data/
+
+vi /etc/scylla/cassandra-rackdc.properties
+
+ll /etc/scylla
+
+cd /etc/scyllaa
+
+ls cassandra-rackdc.properties  scylla.yaml
+
+mv scylla.yaml backup_scylla.yaml
+
+mv /tmp/scylla.yaml /etc/scylla/
+vi etc/scylla/scylla.yaml/
+vi /etc/scylla/scylla.yaml
+
+
+
+CREATE KEYSPACE scylladb WITH replication = {
+ 'class': 'NetworkTopologyStrategy',
+ 'AthiRiver': 3
+ };
+ CREATE ROLE username WITH PASSWORD = 'Setpasswords' AND LOGIN = true;
+ GRANT ALL PERMISSIONS ON ALL KEYSPACES TO username;
+ 
+how we solved the following errors
+cqlsh IP-u cassandra -p Cassandra  ---to solve this anonymous error  
+
+restart the service after editing the yaml file
+ 
+ 
+LIST ALL PERMISSIONS OF username; --- to check granted permissions
+ 
+LIST ROLES;    lists users created
+
+DESCRIBE KEYSPACES;  
+
+DROP KEYSPACE name;  ---to remove a keyspace
+ 
+
