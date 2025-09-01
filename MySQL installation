@@ -1,0 +1,251 @@
+
+
+wget --no-check-certificate https://dev.mysql.com/get/Downloads/MySQL-8.4/mysql-8.4.5-1.el9.x86_64.rpm-bundle.tar
+
+
+
+mkdir -p /data/mysql/data /data/mysql/binlogs /data/mysql/relaylogs /logs/mysql/logs
+
+touch /logs/mysql/logs/slow-query.log /logs/mysql/logs/general.log /logs/mysql/logs/mysql-error.log
+
+chown -R mysql:mysql /data/mysql/ /logs/mysql/
+
+vi /etc/my.cnf
+
+# For advice on how to change settings please see
+# http://dev.mysql.com/doc/refman/8.4/en/server-configuration-defaults.html
+
+[mysqld]
+#
+# Remove leading # and set to the amount of RAM for the most important data
+# cache in MySQL. Start at 70% of total RAM for dedicated server, else 10%.
+# innodb_buffer_pool_size = 128M
+#
+# Remove the leading "# " to disable binary logging
+# Binary logging captures changes between backups and is enabled by
+# default. It's default setting is log_bin=binlog
+# disable_log_bin
+#
+# Remove leading # to set options mainly useful for reporting servers.
+# The server defaults are faster for transactions and fast SELECTs.
+# Adjust sizes as needed, experiment to find the optimal values.
+# join_buffer_size = 128M
+# sort_buffer_size = 2M
+# read_rnd_buffer_size = 2M
+
+#datadir=/var/lib/mysql
+#socket=/var/lib/mysql/mysql.sock
+
+#log-error=/var/log/mysqld.log
+#pid-file=/var/run/mysqld/mysqld.pid
+
+
+datadir                         = /data/mysql/data
+socket                          = /var/lib/mysql/mysql.sock
+pid-file                        = /var/run/mysqld/mysqld.pid
+
+tmpdir                          = /tmp
+port                            = 3450
+server_id                       = 5
+user                            = mysql
+default_storage_engine          = innodb
+innodb_doublewrite              = ON
+
+innodb_buffer_pool_size         = 20G
+
+#sql_mode                       = 'STRICT_ALL_TABLES'
+sql_mode                        = 'STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION'
+
+#replica_skip_errors            =
+
+## Binary logging, replication and PITR
+log_bin                         = /data/mysql/binlogs/binlogs
+binlog_format                   = ROW
+binlog_expire_logs_seconds      = 604800
+binlog_checksum                 = NONE
+# Replication
+relay_log                       = /data/mysql/relaylogs/relay-bin
+relay_log_index                 = /data/mysql/relaylogs/mysql-relay.index
+#read_only                      = 1     ## For DRs to be read-only. Cannot accept writes
+log_replica_updates             = ON
+
+#secure_file_priv               = /data/scripts
+local_infile                    = OFF
+
+## Logging
+log-error                       = /logs/mysql/logs/mysql-error.log
+log_error_verbosity             = 3
+
+general_log_file                = /logs/mysql/logs/general.log
+general_log                     = 1
+
+slow_query_log_file             = /logs/musql/logs/slow-query.log
+slow_query_log                  = 1
+
+long_query_time                 = 5
+log_queries_not_using_indexes   = 1
+
+
+max_connections                 = 10000
+max_connect_errors              = 10000
+#max_user_connections           = 20
+
+## Network and timeout
+net_read_timeout                = 60
+net_write_timeout               = 120
+interactive_timeout             = 1800
+wait_timeout                    = 1800
+connect_timeout              = 10
+
+## GTID replication
+gtid_mode                       = ON
+enforce_gtid_consistency        = ON
+
+replica_parallel_type           = LOGICAL_CLOCK
+replica_parallel_workers        = 4
+replica_preserve_commit_order   = ON
+
+:wq!
+
+
+rm -rf /data/mysql/data/* /data/mysql/binlogs/* /data/mysql/relaylogs/*
+
+truncate -s 0 /logs/mysql/logs/mysql-error.log /logs/mysql/logs/general.log /logs/mysql/logs/slow-query.log
+
+mysqld --initialize --user=mysql --datadir=/data/mysql/data
+
+cat /logs/mysql/logs/mysql-error.log | grep 'temporary password'
+
+-- start database, log in and change root passwd
+
+systemctl start mysqld
+
+systemctl status mysqld
+
+mysql -u root -p
+Enter password:         (Password extracted in cat command above)
+
+mysql> ALTER USER root@'localhost' IDENTIFIED BY 'strongpasword' PASSWORD EXPIRE NEVER;
+
+CREATE USER root@'%' IDENTIFIED BY 'strongpassword' PASSWORD EXPIRE NEVER;
+GRANT ALL ON *.* TO root@'%' WITH GRANT OPTION;
+FLUSH PRIVILEGES;
+
+-- At this point DB is ready for use.
+
+-- Repeat installation process on DR server
+-- Copy and paste config file. Remember to change server_id. Double check for errors.
+-- Initialize DB, change root password and proceed to next step.
+
+=== Replication ===
+
+-- Thika node
+CREATE USER 'appslave'@'IP' IDENTIFIED BY 'password' PASSWORD EXPIRE NEVER;
+GRANT REPLICATION SLAVE ON *.* TO 'appslave'@'IP';
+FLUSH PRIVILEGES;
+
+-- HQ node
+CREATE USER 'appslave'@'IP' IDENTIFIED BY 'password' PASSWORD EXPIRE NEVER;
+GRANT REPLICATION SLAVE ON *.* TO 'appslave'@'IP';
+FLUSH PRIVILEGES;
+
+
+-- On HQ node
+CHANGE REPLICATION SOURCE TO 
+    SOURCE_HOST='IP', 
+    SOURCE_USER='appslave',
+    SOURCE_PASSWORD='password',
+    SOURCE_PORT=number,
+    GET_SOURCE_PUBLIC_KEY = 1,
+    SOURCE_AUTO_POSITION = 1; 
+
+START REPLICA;
+
+== Master-slave replication.
+-- Set the HQ node to read-only to create a master-slave replication setup.
+SET GLOBAL read_only = ON;
+SET GLOBAL super_read_only = ON;
+
+vi /etc/my.cnf
+read_only = ON
+
+== Master-master replication
+-- Do not set any node to read-only.
+-- Repeat replication setup on Thika node.
+
+-- On Thika node
+CHANGE REPLICATION SOURCE TO 
+    SOURCE_HOST='IP', 
+    SOURCE_USER='appslave',
+    SOURCE_PASSWORD='password',
+    SOURCE_PORT=number,
+    GET_SOURCE_PUBLIC_KEY = 1,
+    SOURCE_AUTO_POSITION = 1; 
+
+START REPLICA;
+
+start replica user='appslave' password='password;
+
+
+== How to skip an error in GTID-based replication ==
+STOP SLAVE;
+SET GLOBAL GTID_NEXT='a6d72fb6-5d85-11f0-9c43-005056bfb96b:2';
+BEGIN; COMMIT;
+SET GLOBAL GTID_NEXT='AUTOMATIC';
+START SLAVE;
+
+== How to skip an error in legacy replication ==
+STOP SLAVE;
+SET GLOBAL sql_slave_skip_counter = 1;
+START SLAVE;
+
+
+-- Use with care. Can result in data loss in production env.
+$> RESET REPLICA ALL;
+
+$> RESET BINARY LOGS AND GTIDS;
+
+
+=== Creating DB and application user ===
+
+Servers:
+ IP- Pri
+IP - DR
+Port: XXXX
+DB: dbname
+
+Admin User: dbname_admin
+Passwd: StrongPasswd
+
+App User:dbname_app_user
+passwd: StrongPasswd
+
+
+
+CREATE DATABASE dbname;
+
+CREATE USER dbname_admin@'%' IDENTIFIED BY 'StrongPasswordd' PASSWORD EXPIRE INTERVAL 15 day;
+
+GRANT ALL ON dbname.* TO dbname_admin@'%';
+
+
+CREATE USER dbname_app_user@'%' IDENTIFIED BY 'StrongPassword' PASSWORD EXPIRE NEVER;
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON dbname.* TO dbname_app_user@'%';
+
+FLUSH PRIVILEGES;
+
+
+-- Human account
+
+CREATE USER buyaki@'%' IDENTIFIED BY 'SafePassword' PASSWORD EXPIRE INTERVAL 45 DAY;
+
+GRANT SELECT ON dbname.* TO buyaki@'%';
+
+FLUSH PRIVILEGES;
+
+-- Reset human account passwd
+ALTER USER buyaki@'%' IDENTIFIED BY 'SafePassword2' PASSWORD EXPIRE INTERVAL 45 DAY;
+-- How to lock an account
+ALTER USER buyaki@'%' ACCOUNT LOCK;
+ 
