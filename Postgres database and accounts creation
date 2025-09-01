@@ -1,0 +1,35 @@
+#8. Create the application user
+  CREATE USER username_uat_app_user
+  WITH PASSWORD 'password'
+  NOREPLICATION NOSUPERUSER NOINHERIT NOCREATEROLE NOCREATEDB SEARCH_PATH='username' LOGIN
+  VALID UNTIL 'infinity';
+
+COMMENT ON ROLE username_uat_app_user IS 'Owner:vokebaso Ticket:- DB:username_uat_db Rights:CRUD Env:UAT';
+
+#2. Create the database
+CREATE DATABASE username_uat_db;
+
+#3. Connect to the new database
+\c username_uat_db
+
+#6. Create a dedicated schema
+-- CREATE SCHEMA username AUTHORIZATION username_admin;
+CREATE SCHEMA username;
+
+#Show search path
+show search_path;
+
+SELECT * FROM pg_roles where rolname = 'username_uat_app_user';
+Alter user (username) set search_path to'schemaname'
+SELECT * FROM pg_roles where rolname = 'username_uat_app_user';
+
+
+
+#Grant basic privileges to app user
+GRANT CONNECT ON DATABASE username_uat_db TO username_uat_app_user;
+GRANT USAGE, CREATE ON SCHEMA username TO username_uat_app_user;
+GRANT CREATE ON SCHEMA username TO username_uat_app_user;
+
+#Revoke access to the public schema (safe and proper)
+REVOKE ALL ON SCHEMA public FROM username_uat_app_user;
+
