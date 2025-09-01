@@ -1,0 +1,301 @@
+
+## Confirm OS version
+hostnamectl
+
+## Confirm memory and CPUs
+free -h
+
+lscpu | grep -E '^Thread|^Core|^Socket|^CPU\('
+
+df -h 
+
+1. 📦 Download the Correct .rpm Packages
+
+put the proxy
+
+systemctl status firewalld
+
+systemctl stop firewalld
+
+systemctl disable firewalld
+
+Edit the /etc/selinux/config file and change SELINUX=enforcing to SELINUX=disabled
+Restart the server
+
+getenforce
+
+setenforce 0
+
+mkdir -p /data/mongo/binaries && cd /data/mongo/binaries
+
+## Always verify tool compatibility from release notes (especially database-tools)
+wget --no-check-certificate \
+https://repo.mongodb.org/yum/redhat/9Server/mongodb-org/7.0/x86_64/RPMS/mongodb-org-7.0.18-1.el9.x86_64.rpm \
+https://repo.mongodb.org/yum/redhat/9Server/mongodb-org/7.0/x86_64/RPMS/mongodb-database-tools-100.9.5-1.x86_64.rpm \
+https://repo.mongodb.org/yum/redhat/9Server/mongodb-org/7.0/x86_64/RPMS/mongodb-mongosh-shared-openssl3-2.5.0.x86_64.rpm \
+https://repo.mongodb.org/yum/redhat/9Server/mongodb-org/7.0/x86_64/RPMS/mongodb-org-database-7.0.18-1.el9.x86_64.rpm \
+https://repo.mongodb.org/yum/redhat/9Server/mongodb-org/7.0/x86_64/RPMS/mongodb-org-database-tools-extra-7.0.18-1.el9.x86_64.rpm \
+https://repo.mongodb.org/yum/redhat/9Server/mongodb-org/7.0/x86_64/RPMS/mongodb-org-mongos-7.0.18-1.el9.x86_64.rpm \
+https://repo.mongodb.org/yum/redhat/9Server/mongodb-org/7.0/x86_64/RPMS/mongodb-org-server-7.0.18-1.el9.x86_64.rpm \
+https://repo.mongodb.org/yum/redhat/9Server/mongodb-org/7.0/x86_64/RPMS/mongodb-org-tools-7.0.18-1.el9.x86_64.rpm
+--https://repo.mongodb.org/yum/redhat/9Server/mongodb-org/7.0/x86_64/RPMS/mongodb-mongosh-2.5.0.x86_64.rpm  \      -- Do not include in favour of openssl3 version
+--https://repo.mongodb.org/yum/redhat/9Server/mongodb-org/7.0/x86_64/RPMS/mongodb-cli-2.0.3.x86_64.rpm \            -- Only needed if managing MongoDB Atlas or Cloud 
+                                                                                                                    -- Manager — not needed for on-prem MongoDB
+
+
+wget --no-check-certificate \
+https://repo.mongodb.org/yum/redhat/9Server/mongodb-org/7.0/x86_64/RPMS/mongodb-database-tools-100.12.2-1.x86_64.rpm \
+https://repo.mongodb.org/yum/redhat/9Server/mongodb-org/7.0/x86_64/RPMS/mongodb-mongosh-shared-openssl3-2.5.3.x86_64.rpm \
+https://repo.mongodb.org/yum/redhat/9Server/mongodb-org/7.0/x86_64/RPMS/mongodb-org-7.0.21-1.el9.x86_64.rpm \
+https://repo.mongodb.org/yum/redhat/9Server/mongodb-org/7.0/x86_64/RPMS/mongodb-org-database-7.0.21-1.el9.x86_64.rpm \
+https://repo.mongodb.org/yum/redhat/9Server/mongodb-org/7.0/x86_64/RPMS/mongodb-org-database-tools-extra-7.0.21-1.el9.x86_64.rpm \
+https://repo.mongodb.org/yum/redhat/9Server/mongodb-org/7.0/x86_64/RPMS/mongodb-org-mongos-7.0.21-1.el9.x86_64.rpm \
+https://repo.mongodb.org/yum/redhat/9Server/mongodb-org/7.0/x86_64/RPMS/mongodb-org-server-7.0.21-1.el9.x86_64.rpm \
+https://repo.mongodb.org/yum/redhat/9Server/mongodb-org/7.0/x86_64/RPMS/mongodb-org-tools-7.0.21-1.el9.x86_64.rpm
+
+
+
+
+
+
+rpm -ivh *
+
+mkdir -p /data/mongo/data && mkdir -p /logs/mongo/logs
+
+touch /logs/mongo/logs/mongod.log
+
+chmod -R 755 /logs/mongo/logs/mongod.log
+
+chown mongod:mongod -R /data/mongo /logs/mongo
+
+ls -lrt /data/mongo
+
+ls -lrt /logs/mongo
+
+-- edit config file
+vi /etc/mongod.conf
+
+# where to write logging data
+path: /logs/mongo/logs/mongod.log
+
+# where and how to store data
+dbPath: /data/mongo/data
+
+# network interface
+bindIp: 0.0.0.0
+
+systemctl restart mongod
+
+-- Log in to mongo, run the command
+mongosh 
+
+-- Creating a user
+> use admin
+> db.createUser(
+{
+  user: "username_admin",
+  pwd: "password",
+  roles: [ {role: "root", username: "admin" } ]
+}
+);
+
+or
+
+> db.createUser(
+{
+  user: "username_admin",
+  pwd: "strongpassword",
+  roles: [ {role: "root", username: "admin" } ],
+    mechanisms: ["SCRAM-SHA-256"]
+}
+);
+
+-- to specify authentication mechanism to be used: 
+db.createUser({
+  user: "root",
+  pwd: "StrongPassword254",
+  roles: [{ role: "root", username: "admin" }],
+  mechanisms: ["SCRAM-SHA-256"]
+})
+
+Restart MongoDB with Authentication Enabled
+Modify your MongoDB configuration file (/etc/mongod.conf or /etc/mongodb.conf) and ensure the following line is present under security:
+
+security:
+  authorization: enabled
+
+setParameter:
+  authenticationMechanisms: SCRAM-SHA-256
+
+--list users
+db.getUsers()  or  show users;
+
+
+*** REPLICATION ***
+
+-->> Generate a Keyfile for Internal Authentication
+-- Add new directory to store keyfile
+mkdir -p /data/mongo/code
+
+-- Create key file on the new directory from one node.
+openssl rand –base64 756 > /data/mongo/code/mongo-keyfile.yml
+
+-- View key content
+cat /data/mongo/code/mongo-keyfile.yml
+
+-- Copy key to the other nodes and move it to correct directory
+scp /data/mongo/code/mongo-keyfile.yml pnzioki1@IP:/tmp
+scp /data/mongo/code/mongo-keyfile.yml pnzioki1@IP:/tmp
+
+mv /tmp/mongo-keyfile.yml /data/mongo/code
+
+--Change key ownership to mongod
+chown mongod:mongod –R /data/mongo/code/
+
+-- Change key access mode
+chmod 400 /data/mongo/code/mongo-keyfile.yml
+
+-- Confirm change
+ls –lRt /data/mongo/code
+
+-- Add key to config file
+-- Edit config file to capture key file
+vi /etc/mongod.conf
+
+security:
+  keyFile: /data/mongo/code/mongo-keyfile.yml
+
+replication:
+  replSetName: "amg"
+
+-- Configure Hostnames and Networking
+Since your servers might be on a private network without DNS, update the /etc/hosts file 
+on each server to include the private IP addresses and hostnames of all replica set members.
+vi /etc/hosts
+List all hosts with their hostnames and IPs
+
+-- restart service for change to take effect
+systemctl restart mongod
+
+==>> Initialize the Replica Set from the node that you intend to be the primary.
+-- Connect to monogoDB shell
+mongosh --host `hostname` -authenticationDatabase admin -u username_admin --port xxxx
+
+--login
+mongosh
+-- authenticate with user created above, then proceed to initialize
+use admin 
+db.auth("username_admin", "password")
+or
+use admin
+db.auth("username_admin", passwordPrompt())
+
+-- Alternatively you can log in as below and proceed to initialize the replica set
+mongosh --host `hostname` --authenticationDatabase admin -u username_admin --port xxxx
+
+-- Initiate the Replica Set
+rs.initiate({
+  _id: "bss",
+  members: [
+    { _id: 0, host: "hostnamet:port" },
+    { _id: 1, host: "hostname:port" },
+    { _id: 2, host: "hostname:port" }
+  ]
+})
+
+-- Verify the Replica Set Status
+rs.status()
+
+rs.conf()
+
+-- To quickly identify which member is primary:
+db.isMaster()
+
+*** Performance Tuning ***
+-- Disable Transparent Huge Pages to improve memory and CPU efficiency
+- check if THP is enabled
+cat /sys/kernel/mm/transparent_hugepage/enabled
+
+--disable THP at runtime
+echo never > /sys/kernel/mm/transparent_hugepage/enabled
+
+- confirm it is off
+cat /sys/kernel/mm/transparent_hugepage/enabled
+
+-- Disable THP at boot time
+- Grant execution right on this path
+chmod +x /etc/rc.d/rc.local
+
+- Edit /etc/rc.d/rc.local to have the following line
+vi /etc/rc.d/rc.local
+
+- add this line
+echo never > /sys/kernel/mm/transparent_hugepage/enabled
+
+- create a lock file
+vi /etc/rc.d/rc.local
+- add this line
+touch /var/lock/subsys/local
+
+
+## Creating application and cyber sec user 
+
+== Details to share with customer ==
+
+-- Application User Details --
+
+Replica set name: bss
+Server IPs:
+    
+Port:
+Username: 
+Database:
+Password: 
+
+-- Cyber security user details --
+
+Replica set name: 
+Server IPs:
+   
+Port: 
+Username:
+DB: admin
+Password: 
+
+===============================================================
+
+-- Connect to DB
+mongosh --host `hostname` --authenticationDatabase admin -u username_admin --port xxxx
+
+-- Create the DB
+use username
+
+-- Insert dummy record/collection to hold the DB
+db.test_collection.insertOne({
+    name: "John Doe",
+    age: 30,
+    email: "john.doe@example.com",
+    Description: "Dummy data to hold DB in place",
+    isActive: false
+});
+
+-- Create the user on the DB
+db.createUser({
+  user: "username",
+  pwd: "password",
+  roles: [ { role: "readWrite", db: "username" } ],
+  mechanisms: ["SCRAM-SHA-256"]
+})
+
+-- just in case
+db.dropUser("devengine")
+
+-- Connect as the created application user
+mongosh --host `hostname` --authenticationDatabase databasename -u username --port xxxx
+
+
+
+-- Verify when account will expire
+
+use admin
+db.getUser("username", { showCredentials: true })
