@@ -33,3 +33,111 @@ GRANT CREATE ON SCHEMA username TO username_uat_app_user;
 #Revoke access to the public schema (safe and proper)
 REVOKE ALL ON SCHEMA public FROM username_uat_app_user;
 
+
+
+
+NEW PROCEDURE
+Server:
+Port: 
+DB:
+Schema: 
+
+Admin Account (Has all rights on DB schema. Only use to set up DB. Do NOT use in prod) - Expires on 2025-10-20
+Username: 
+Password:
+
+Application accounts(CRUD privileges only on DB yyyyy  data objects in schema xxx) 
+Username:
+Password: 
+
+
+-- 1. Create the admin user with limited but intentional powers
+CREATE USER xxx_admin
+  WITH PASSWORD strongpassword
+  NOREPLICATION NOSUPERUSER NOINHERIT NOCREATEROLE NOCREATEDB LOGIN
+  VALID UNTIL '2025-10-20';
+
+COMMENT ON ROLE xxxx_admin IS 'Ticket: REQ- DB:xxxx_db Rights:Admin Env:UAT';
+
+-- 2. Create the database (owned by postgres at this point)
+CREATE DATABASE xxxx_db;
+
+-- 3. Connect to the new database
+\c xxxx_db
+
+-- 4. REVOKE default public schema rights (safe and correct)
+REVOKE ALL ON SCHEMA public FROM xxxx_admin;
+
+-- 5. Grant connection rights to the admin (optional but useful)
+GRANT CONNECT ON DATABASE xxxx_db TO xxxx_admin;
+
+-- 6. Create a dedicated schema and assign ownership to the admin
+CREATE SCHEMA yyyy AUTHORIZATION xxxx_admin;
+
+-- 7. Transfer ownership of the DB to the admin user
+ALTER DATABASE xxxx_db OWNER TO xxxx_admin;
+
+-- 8. Create the application user with PoLP
+CREATE USER xxxx_app_user
+  WITH PASSWORD 'strongpassword'
+  NOREPLICATION NOSUPERUSER NOINHERIT NOCREATEROLE NOCREATEDB LOGIN
+  VALID UNTIL 'infinity';
+
+COMMENT ON ROLE xxxx_app_user IS 'Ticket: REQ- DB:xxxx_db Rights:CRUD Env:UAT';
+
+-- 9. Revoke access to the public schema (safe and proper)
+REVOKE ALL ON SCHEMA public FROM xxxx_app_user;
+
+-- 10. Grant basic privileges to app user
+GRANT CONNECT ON DATABASE xxxx_db TO xxxx_app_user;
+GRANT USAGE ON SCHEMA yyyy TO xxxx_app_user;
+
+-- GRANT USAGE, CREATE  ON SCHEMA yyyy TO xxxx_app_user;
+
+-- 11. Grant table privileges
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA yyyy TO xxxx_app_user;
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA yyyy
+  GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO xxxx_app_user;
+
+-- 12. Grant sequence access (required for SERIAL/BIGSERIAL columns)
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA yyyy TO xxxx_app_user;
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA yyyy
+  GRANT USAGE, SELECT ON SEQUENCES TO xxxx_app_user;
+
+-- 13. Optional: Grant EXECUTE on existing and future functions
+GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA yyyy TO xxxx_app_user;
+ALTER DEFAULT PRIVILEGES IN SCHEMA yyyy GRANT EXECUTE ON FUNCTIONS TO xxxx_app_user;
+ 
+--- Set admin to grant rights on all objects created to the app user
+SET ROLE xxxx_admin;
+ALTER DEFAULT PRIVILEGES IN SCHEMA yyyy
+  GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO xxxx_app_user;
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA yyyy
+  GRANT USAGE, SELECT ON SEQUENCES TO xxxx_app_user;
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA yyyy GRANT EXECUTE ON FUNCTIONS TO xxxx_app_user;
+
+
+
+ psql -U xxxx_app_user -d xxxx_db -h IP Address -p port
+
+
+SELECT * FROM information_schema.table_privileges WHERE GRANTEE = 'xxxx_app_user'
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
